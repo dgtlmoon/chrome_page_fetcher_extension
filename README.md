@@ -72,7 +72,6 @@ python3 sse-server.py --url "https://example.com/product/123"
 This will:
 - Start Chrome with the extension loaded
 - Set window size to 1280x1024
-- Use HTTP proxy at 10.8.0.1:8118
 - Navigate to changedetection.io (triggers auto-start)
 
 ## Usage Modes
