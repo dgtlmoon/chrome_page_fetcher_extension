@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Puppeteer Extension",
+  "version": "1.0",
+  "description": "Chrome extension that runs Puppeteer commands",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "tabCapture"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Run Puppeteer Commands"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  }
+}

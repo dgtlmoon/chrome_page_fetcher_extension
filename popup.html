@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+    }
+    
+    #runButton, #runSSEButton {
+      border: none;
+      color: white;
+      padding: 15px 32px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      width: 48%;
+    }
+    
+    #runButton {
+      background-color: #4CAF50;
+    }
+    
+    #runButton:hover {
+      background-color: #45a049;
+    }
+    
+    #runSSEButton {
+      background-color: #2196F3;
+    }
+    
+    #runSSEButton:hover {
+      background-color: #1976D2;
+    }
+    
+    #runButton:disabled, #runSSEButton:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .command-list {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+    }
+    
+    .command-item {
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 3px;
+      font-size: 12px;
+      border-left: 4px solid;
+    }
+    
+    .command-pending {
+      background-color: #f8f9fa;
+      border-left-color: #6c757d;
+    }
+    
+    .command-running {
+      background-color: #fff3cd;
+      border-left-color: #ffc107;
+    }
+    
+    .command-completed {
+      background-color: #d1e7dd;
+      border-left-color: #198754;
+    }
+    
+    .command-failed {
+      background-color: #f8d7da;
+      border-left-color: #dc3545;
+    }
+    
+    .command-type {
+      font-weight: bold;
+      color: #0056b3;
+    }
+    
+    .command-details {
+      color: #666;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+    
+    .results {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 10px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .result-item {
+      padding: 5px;
+      margin: 3px 0;
+      background-color: #f8f9fa;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <h3>Browser Steps Extension</h3>
+  <button id="runButton">Run Command List</button>
+  <button id="runSSEButton">Run SSE Command List</button>
+  
+  <div class="command-list">
+    <h4 style="margin-top: 0;">Commands:</h4>
+    <div id="commandList"></div>
+  </div>
+  
+  <div class="results" id="resultsSection" style="display: none;">
+    <h4 style="margin-top: 0;">Results:</h4>
+    <div id="results"></div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
