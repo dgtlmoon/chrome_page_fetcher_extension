@@ -39,6 +39,7 @@ google-chrome \
   --disable-popup-blocking \
   --disable-translate \
   --new-window \
+  --window-size=1280,1024 \
   https://changedetection.io &
 
 CHROME_PID=$!
