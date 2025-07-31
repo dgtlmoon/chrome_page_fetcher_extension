@@ -36,6 +36,7 @@ google-chrome \
   --disable-extensions-except="$EXTENSION_DIR" \
   --no-first-run \
   --disable-default-apps \
+  --headless \
   --disable-popup-blocking \
   --disable-translate \
   --new-window \

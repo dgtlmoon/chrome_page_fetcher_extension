@@ -35,6 +35,7 @@ command_queue: List[Dict[str, Any]] = []
 command_results: Dict[str, Dict[str, Any]] = {}
 html_content_storage: Dict[str, Dict[str, Any]] = {}
 active_connections = set()
+connection_commands: Dict[str, List[Dict[str, Any]]] = {}  # Track commands per connection
 
 # Initialize with sample browser commands (similar to extension)
 def initialize_commands():
@@ -133,15 +134,22 @@ async def receive_command_result(result_data: dict):
     if not command_id:
         return {"error": "Missing command_id"}
     
-    # Update command status in queue
+    # Update command status in connection-specific commands
     command_type = None
-    for cmd in command_queue:
-        if cmd["id"] == command_id:
-            cmd["status"] = "completed" if result_data.get("result") else "failed"
-            cmd["completed_at"] = time.time()
-            command_type = cmd["type"]
-            if result_data.get("error"):
-                cmd["error"] = result_data["error"]
+    found_command = False
+    
+    # Search through all connection commands to find the one with matching ID
+    for conn_id, commands in connection_commands.items():
+        for cmd in commands:
+            if cmd["id"] == command_id:
+                cmd["status"] = "completed" if result_data.get("result") else "failed"
+                cmd["completed_at"] = time.time()
+                command_type = cmd["type"]
+                if result_data.get("error"):
+                    cmd["error"] = result_data["error"]
+                found_command = True
+                break
+        if found_command:
             break
     
     # Store detailed result
@@ -254,6 +262,24 @@ async def stream_browser_commands():
         active_connections.add(connection_id)
         print(f"New SSE connection: {connection_id}")
         
+        # Create a fresh copy of command list for this connection
+        fresh_commands = []
+        for cmd in command_queue:
+            fresh_cmd = {
+                "id": str(uuid.uuid4()),  # New unique ID for this connection
+                "type": cmd["type"],
+                "selector": cmd["selector"],
+                "value": cmd["value"],
+                "status": "pending",
+                "created_at": time.time(),
+                "connection_id": connection_id
+            }
+            fresh_commands.append(fresh_cmd)
+        
+        # Store commands for this connection globally
+        connection_commands[connection_id] = fresh_commands
+        print(f"Created {len(fresh_commands)} fresh commands for connection {connection_id}")
+        
         try:
             # Send initial connection confirmation
             yield f"data: {json.dumps({'type': 'connected', 'connection_id': connection_id})}\n\n"
@@ -261,9 +287,9 @@ async def stream_browser_commands():
             sent_commands = set()
             
             while connection_id in active_connections:
-                # Find pending commands that haven't been sent yet
+                # Find pending commands from this connection's list that haven't been sent yet
                 pending_commands = [
-                    cmd for cmd in command_queue 
+                    cmd for cmd in connection_commands[connection_id] 
                     if cmd["status"] == "pending" and cmd["id"] not in sent_commands
                 ]
                 
@@ -288,11 +314,11 @@ async def stream_browser_commands():
                     # Add small delay between commands
                     await asyncio.sleep(0.1)
                 
-                # Check if all commands are done
-                all_done = all(cmd["status"] in ["completed", "failed"] for cmd in command_queue)
-                if all_done and len(sent_commands) == len(command_queue):
+                # Check if all commands for this connection are done
+                all_done = all(cmd["status"] in ["completed", "failed"] for cmd in connection_commands[connection_id])
+                if all_done and len(sent_commands) == len(connection_commands[connection_id]):
                     yield f"data: {json.dumps({'type': 'all_commands_completed'})}\n\n"
-                    print("All commands completed, closing connection")
+                    print(f"All commands completed for connection {connection_id}, closing connection")
                     break
                 
                 # Wait before checking for new commands
@@ -302,6 +328,9 @@ async def stream_browser_commands():
             print(f"SSE connection {connection_id} cancelled")
         finally:
             active_connections.discard(connection_id)
+            # Clean up connection commands
+            if connection_id in connection_commands:
+                del connection_commands[connection_id]
             print(f"SSE connection {connection_id} closed")
     
     return StreamingResponse(
