@@ -2,6 +2,17 @@
 
 A Chrome extension that executes changedetection.io-style browser automation commands via Server-Sent Events (SSE). The extension can automatically capture HTML content and process it with BeautifulSoup for analysis.
 
+The browser step command list is retrieved from `sse-server.py` when the Chrome browser first starts by a little hack that triggers the connection on the first network IO. (Or else the chrome extension would need clicking)
+
+First time usage-
+- Have `sse-server.py` running
+-  (first time only) Run the `fetch-page.sh` and enable the extension and 'debug mode' in extension config, close it.
+- Run `fetch-page.sh` to test (it will re-use the same chrome profile)
+- 
+ (see below for more details),
+
+
+
 ## Features
 
 - **Automated Browser Steps**: Execute changedetection.io browser automation commands
