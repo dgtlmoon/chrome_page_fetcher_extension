@@ -258,4 +258,52 @@ async function startSSECommandListener() {
   }
 }
 
+// Auto-trigger SSE on changedetection.io requests
+let autoSSETriggerEnabled = false;
+let sseSessionStarted = false;
+
+// Set up non-blocking webRequest listener for automatic SSE triggering
+chrome.webRequest.onBeforeRequest.addListener(
+  function(details) {
+    console.log('Intercepted request to changedetection.io:', details.url);
+    
+    // Check if this is the first changedetection.io request and auto-trigger is enabled
+    if (!sseSessionStarted && autoSSETriggerEnabled) {
+      console.log('Auto-triggering SSE session...');
+      sseSessionStarted = true;
+      
+      // Start SSE session asynchronously
+      startSSECommandListener()
+        .then(result => {
+          console.log('Auto-triggered SSE session started:', result);
+        })
+        .catch(error => {
+          console.error('Failed to auto-start SSE session:', error);
+          sseSessionStarted = false; // Reset flag on failure
+        });
+      
+      // Redirect to about:blank to effectively "abort" the navigation
+      chrome.tabs.update(details.tabId, { url: 'about:blank' });
+    }
+  },
+  {
+    urls: ["*://changedetection.io/*", "*://*.changedetection.io/*"]
+  }
+  // Removed ["blocking"] - using non-blocking approach
+);
+
+// Enable auto-trigger when extension starts
+chrome.runtime.onStartup.addListener(() => {
+  console.log('Extension startup - enabling auto SSE trigger');
+  autoSSETriggerEnabled = true;
+  sseSessionStarted = false;
+});
+
+// Enable auto-trigger when extension is installed/reloaded
+chrome.runtime.onInstalled.addListener(() => {
+  console.log('Extension installed/reloaded - enabling auto SSE trigger');
+  autoSSETriggerEnabled = true;
+  sseSessionStarted = false;
+});
+
 console.log('=== BACKGROUND SCRIPT LOADED ===');

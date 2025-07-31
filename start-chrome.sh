@@ -39,7 +39,7 @@ google-chrome \
   --disable-popup-blocking \
   --disable-translate \
   --new-window \
-  &
+  https://changedetection.io &
 
 CHROME_PID=$!
 
