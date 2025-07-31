@@ -4,8 +4,10 @@ SSE Server for Chrome Extension Browser Commands
 Sends changedetection.io browser steps via Server-Sent Events
 """
 
+import argparse
 import asyncio
 import json
+import sys
 import time
 import uuid
 from typing import List, Dict, Any
@@ -36,17 +38,19 @@ command_results: Dict[str, Dict[str, Any]] = {}
 html_content_storage: Dict[str, Dict[str, Any]] = {}
 active_connections = set()
 connection_commands: Dict[str, List[Dict[str, Any]]] = {}  # Track commands per connection
+target_url: str = ""  # Will be set from command line argument
 
 # Initialize with sample browser commands (similar to extension)
-def initialize_commands():
+def initialize_commands(url: str):
     """Initialize the command queue with sample changedetection.io browser steps"""
-    global command_queue
+    global command_queue, target_url
+    target_url = url
     command_queue = [
         {
             "id": str(uuid.uuid4()),
             "type": "action_goto_url",
             "selector": None,
-            "value": "https://www.costco.com/.product.100736527.html",
+            "value": url,
             "status": "pending",
             "created_at": time.time()
         },
@@ -74,14 +78,14 @@ def initialize_commands():
             "status": "pending",
             "created_at": time.time()
         },
-        {
-            "id": str(uuid.uuid4()),
-            "type": "action_wait_for_text",
-            "selector": None,
-            "value": "Add to Cart",
-            "status": "pending",
-            "created_at": time.time()
-        },
+#        {
+#            "id": str(uuid.uuid4()),
+#            "type": "action_wait_for_text",
+#            "selector": None,
+#            "value": "Add to Cart",
+#            "status": "pending",
+#            "created_at": time.time()
+#        },
         {
             "id": str(uuid.uuid4()),
             "type": "action_scroll_down",
@@ -104,7 +108,10 @@ def initialize_commands():
 @app.on_event("startup")
 async def startup_event():
     """Initialize commands when server starts"""
-    initialize_commands()
+    if target_url:
+        initialize_commands(target_url)
+    else:
+        print("Warning: No target URL provided. Commands not initialized.")
 
 @app.get("/health")
 async def health_check():
@@ -360,17 +367,58 @@ async def reset_commands():
     print("Commands reset to pending status")
     return {"status": "reset", "commands": len(command_queue)}
 
-if __name__ == "__main__":
+def main():
+    """Main function with command line argument parsing"""
+    parser = argparse.ArgumentParser(
+        description="SSE Server for Chrome Extension Browser Commands",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python3 sse-server.py -u "https://www.costco.com/.product.100736527.html"
+  python3 sse-server.py --url "https://example.com/product/123"
+        """
+    )
+    
+    parser.add_argument(
+        "-u", "--url",
+        required=True,
+        help="Target URL for the action_goto_url command"
+    )
+    
+    parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Host to bind the server to (default: 0.0.0.0)"
+    )
+    
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Port to bind the server to (default: 8000)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Set global target URL
+    global target_url
+    target_url = args.url
+    
     print("Starting Browser Steps SSE Server...")
+    print(f"Target URL: {target_url}")
+    print(f"Server will start on {args.host}:{args.port}")
     print("Available endpoints:")
-    print("  - http://localhost:8000/health")
-    print("  - http://localhost:8000/api/commands")
-    print("  - http://localhost:8000/stream/browser-commands")
-    print("  - http://localhost:8000/api/reset-commands")
+    print(f"  - http://{args.host}:{args.port}/health")
+    print(f"  - http://{args.host}:{args.port}/api/commands")
+    print(f"  - http://{args.host}:{args.port}/stream/browser-commands")
+    print(f"  - http://{args.host}:{args.port}/api/reset-commands")
     
     uvicorn.run(
         app, 
-        host="0.0.0.0", 
-        port=8000,
+        host=args.host, 
+        port=args.port,
         log_level="info"
     )
+
+if __name__ == "__main__":
+    main()
